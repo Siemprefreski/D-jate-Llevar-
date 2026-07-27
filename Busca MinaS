@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscaminas: Edición Malyado</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #121212;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      user-select: none;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+      color: #ff3366;
+    }
+
+    #status {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      height: 30px;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 45px);
+      grid-template-rows: repeat(8, 45px);
+      gap: 5px;
+      background-color: #222;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .cell {
+      background-color: #333;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .cell:hover {
+      background-color: #444;
+    }
+
+    .cell.revealed {
+      background-color: #1b4332;
+      color: #52b788;
+      cursor: default;
+    }
+
+    .cell.flagged {
+      background-color: #4a3e1d;
+    }
+
+    .cell.mine {
+      background-color: #9e2a2b;
+      font-size: 1.2rem;
+    }
+
+    /* Colores para la cantidad de minas */
+    .c-1 { color: #52b788; }
+    .c-2 { color: #48cae4; }
+    .c-3 { color: #ffb703; }
+    .c-4 { color: #ff0054; }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button.btn {
+      padding: 10px 20px;
+      border: none;
+      background: #ff3366;
+      color: white;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    <div class="controls">
+    <button class="btn" onclick="reiniciarJuego()">Reiniciar</button>
+    <button class="btn" id="musicBtn" onclick="toggleMusica()">🔊 Música: ON</button>
+  </div>
+
+  <!-- Elemento para cargar tu archivo MP3 -->
+  <audio id="audioVictoria" src="DEJATE LLEVAR Shimi PROD DJ CESAR MX.wav" preload="auto"></audio>
+  button.btn:hover {
+      background: #e02e5b;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>BUSCAMINAS: EDICIÓN MALYADO</h1>
+  <div id="status">Haz clic en una casilla para comenzar</div>
+
+  <div id="board"></div>
+
+
+  <script>
+    const FILAS = 8;
+    const COLUMNAS = 8;
+    const MINAS = 10;
+    let timerVictoria = null; // Para controlar los 60 segundos del audio
+
+    let tablero = [];
+    let reveladas = 0;
+    let gameOver = false;
+    let primerClic = true;
+
+    // --- Audio utilizando la API Web Audio ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let musicaSonando = false;
+    let timerMusica = null;
+
+    function reproducirTono(freq, duracion, tipo = 'sine') {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = tipo;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duracion);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duracion);
+    }
+
+    function iniciarMusicaFondo() {
+      const notas = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00];
+      let i = 0;
+      musicaSonando = true;
+      
+      timerMusica = setInterval(() => {
+        if (musicaSonando && !gameOver) {
+          reproducirTono(notas[i % notas.length], 0.4, 'triangle');
+          i = Math.floor(Math.random() * notas.length);
+        }
+      }, 500);
+    }
+
+    function toggleMusica() {
+      musicaSonando = !musicaSonando;
+      document.getElementById('musicBtn').innerText = musicaSonando ? "🔊 Música: ON" : "🔇 Música: OFF";
+      if (musicaSonando && !timerMusica) iniciarMusicaFondo();
+    }
+
+    // --- Lógica del Juego ---
+    function inicializarTablero() {
+      const boardElement = document.getElementById('board');
+      boardElement.innerHTML = '';
+      tablero = Array(FILAS).fill(null).map(() => 
+        Array(COLUMNAS).fill(null).map(() => ({ minado: false, revelado: false, marcada: false, vecinas: 0 }))
+      );
+      
+      reveladas = 0;
+      gameOver = false;
+      primerClic = true;
+      document.getElementById('status').innerText = "Haz clic en una casilla para comenzar";
+  document.getElementById('DEJATE LLEVAR Shimi PROD DJ CESAR MX.wav').pause();
+
+
+      for (let f = 0; f < FILAS; f++) {
+        for (let c = 0; c < COLUMNAS; c++) {
+          const cell = document.createElement('button');
+          cell.classList.add('cell');
+          cell.dataset.fila = f;
+          cell.dataset.col = c;
+          
+          cell.addEventListener('click', () => descubrirCasilla(f, c));
+          cell.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            marcarCasilla(f, c);
+          });
+
+          boardElement.appendChild(cell);
+        }
+      }
+
+      if (!timerMusica) iniciarMusicaFondo();
+    }
+
+    function generarMinas(fExcluida, cExcluida) {
+      let colocadas = 0;
+      while (colocadas < MINAS) {
+        let f = Math.floor(Math.random() * FILAS);
+        let c = Math.floor(Math.random() * COLUMNAS);
+        
+        // Evitar la celda del primer clic
+        if (!tablero[f][c].minado && !(f === fExcluida && c === cExcluida)) {
+          tablero[f][c].minado = true;
+          colocadas++;
+        }
+      }
+
+      // Calcular minas vecinas
+      for (let f = 0; f < FILAS; f++) {
+        for (let c = 0; c < COLUMNAS; c++) {
+          if (!tablero[f][c].minado) {
+            tablero[f][c].vecinas = contarVecinas(f, c);
+          }
+        }
+      }
+    }
+
+    function contarVecinas(f, c) {
+      let total = 0;
+      for (let df = -1; df <= 1; df++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          let nf = f + df;
+          let nc = c + dc;
+          if (nf >= 0 && nf < FILAS && nc >= 0 && nc < COLUMNAS) {
+            if (tablero[nf][nc].minado) total++;
+          }
+        }
+      }
+      return total;
+    }
+
+    function marcarCasilla(f, c) {
+      if (gameOver || tablero[f][c].revelado) return;
+
+      const cellElement = getCellElement(f, c);
+      tablero[f][c].marcada = !tablero[f][c].marcada;
+
+      if (tablero[f][c].marcada) {
+        cellElement.classList.add('flagged');
+        cellElement.innerText = "🚩";
+        reproducirTono(400, 0.1);
+      } else {
+        cellElement.classList.remove('flagged');
+        cellElement.innerText = "";
+        reproducirTono(300, 0.1);
+      }
+    }
+
+    function descubrirCasilla(f, c) {
+      if (gameOver || tablero[f][c].revelado || tablero[f][c].marcada) return;
+
+      if (primerClic) {
+        generarMinas(f, c);
+        primerClic = false;
+      }
+
+      tablero[f][c].revelado = true;
+      const cellElement = getCellElement(f, c);
+
+      if (tablero[f][c].minado) {
+        // PERDIÓ
+        cellElement.classList.add('mine');
+        cellElement.innerText = "💣";
+        reproducirTono(100, 0.8, 'sawtooth');
+        document.getElementById('status').innerText = "💥 ¡BOOM! Tocaste una mina. Juego terminado.";
+        gameOver = true;
+        revelarTodo();
+      } else {
+        // CASILLA SEGURA
+        cellElement.classList.add('revealed');
+        reveladas++;
+        reproducirTono(523.25, 0.1);
+if (tablero[f][c].vecinas > 0) {
+  cellElement.innerText = tablero[f][c].vecinas;
+  cellElement.classList.add(`c-${Math.min(tablero[f][c].vecinas, 4)}`);
+} else {
+  cellElement.innerText = "Malya2"; // <--- Esta es la línea cambiada
+  expandirVacias(f, c);
+  // VERIFICAR VICTORIA
+if (reveladas === (FILAS * COLUMNAS) - MINAS) {
+  document.getElementById('status').innerText = "🏆 ¡GRACIAS POR APOYAR EL PROCESO! ¡MALYADO ERES UN RECIO!";
+      let timerVictoria = null; // Para controlar los 60 segundos del audio
+      }
+    }
+
+    function expandirVacias(f, c) {
+      for (let df = -1; df <= 1; df++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          let nf = f + df;
+          let nc = c + dc;
+          if (nf >= 0 && nf < FILAS && nc >= 0 && nc < COLUMNAS) {
+            if (!tablero[nf][nc].revelado && !tablero[nf][nc].marcada) {
+              descubrirCasilla(nf, nc);
+            }
+          }
+        }
+      }
+    }
+
+    function getCellElement(f, c) {
+      const index = f * COLUMNAS + c;
+      return document.getElementById('board').children[index];
+    }
+
+    function revelarTodo() {
+      for (let f = 0; f < FILAS; f++) {
+        for (let c = 0; c < COLUMNAS; c++) {
+          if (!tablero[f][c].revelado) {
+            const cellElement = getCellElement(f, c);
+            if (tablero[f][c].minado) {
+              cellElement.classList.add('mine');
+              cellElement.innerText = "💣";
+            }
+          }
+        }
+      }
+    }
+
+    function reiniciarJuego() {
+      inicializarTablero();
+    }
+
+    window.onload = inicializarTablero;
+  </script>
+</body>
+</html>
