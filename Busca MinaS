@@ -27,6 +27,7 @@
       font-size: 1.2rem;
       margin-bottom: 15px;
       height: 30px;
+      text-align: center;
     }
 
     #board {
@@ -46,7 +47,7 @@
       border-radius: 4px;
       color: #fff;
       font-weight: bold;
-      font-size: 0.9rem;
+      font-size: 0.75rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -95,14 +96,7 @@
       cursor: pointer;
     }
 
-    <div class="controls">
-    <button class="btn" onclick="reiniciarJuego()">Reiniciar</button>
-    <button class="btn" id="musicBtn" onclick="toggleMusica()">🔊 Música: ON</button>
-  </div>
-
-  <!-- Elemento para cargar tu archivo MP3 -->
-  <audio id="audioVictoria" src="DEJATE LLEVAR Shimi PROD DJ CESAR MX.wav" preload="auto"></audio>
-  button.btn:hover {
+    button.btn:hover {
       background: #e02e5b;
     }
   </style>
@@ -114,19 +108,26 @@
 
   <div id="board"></div>
 
+  <div class="controls">
+    <button class="btn" onclick="reiniciarJuego()">Reiniciar</button>
+    <button class="btn" id="musicBtn" onclick="toggleMusica()">🔊 Música: ON</button>
+  </div>
+
+  <!-- Audio de victoria personalizado -->
+  <audio id="audioVictoria" src="DEJATE LLEVAR Shimi PROD DJ CESAR MX.wav" preload="auto"></audio>
 
   <script>
     const FILAS = 8;
     const COLUMNAS = 8;
     const MINAS = 10;
-    let timerVictoria = null; // Para controlar los 60 segundos del audio
 
     let tablero = [];
     let reveladas = 0;
     let gameOver = false;
     let primerClic = true;
+    let timerVictoria = null; // Controla los 60 segundos del audio
 
-    // --- Audio utilizando la API Web Audio ---
+    // --- Audio Web API ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     let musicaSonando = false;
     let timerMusica = null;
@@ -176,8 +177,14 @@
       gameOver = false;
       primerClic = true;
       document.getElementById('status').innerText = "Haz clic en una casilla para comenzar";
-  document.getElementById('DEJATE LLEVAR Shimi PROD DJ CESAR MX.wav').pause();
 
+      // Detener audio de victoria anterior si estaba sonando
+      const audioWin = document.getElementById('audioVictoria');
+      if (audioWin) {
+        audioWin.pause();
+        audioWin.currentTime = 0;
+      }
+      clearTimeout(timerVictoria);
 
       for (let f = 0; f < FILAS; f++) {
         for (let c = 0; c < COLUMNAS; c++) {
@@ -205,14 +212,12 @@
         let f = Math.floor(Math.random() * FILAS);
         let c = Math.floor(Math.random() * COLUMNAS);
         
-        // Evitar la celda del primer clic
         if (!tablero[f][c].minado && !(f === fExcluida && c === cExcluida)) {
           tablero[f][c].minado = true;
           colocadas++;
         }
       }
 
-      // Calcular minas vecinas
       for (let f = 0; f < FILAS; f++) {
         for (let c = 0; c < COLUMNAS; c++) {
           if (!tablero[f][c].minado) {
@@ -277,16 +282,31 @@
         cellElement.classList.add('revealed');
         reveladas++;
         reproducirTono(523.25, 0.1);
-if (tablero[f][c].vecinas > 0) {
-  cellElement.innerText = tablero[f][c].vecinas;
-  cellElement.classList.add(`c-${Math.min(tablero[f][c].vecinas, 4)}`);
-} else {
-  cellElement.innerText = "Malya2"; // <--- Esta es la línea cambiada
-  expandirVacias(f, c);
-  // VERIFICAR VICTORIA
-if (reveladas === (FILAS * COLUMNAS) - MINAS) {
-  document.getElementById('status').innerText = "🏆 ¡GRACIAS POR APOYAR EL PROCESO! ¡MALYADO ERES UN RECIO!";
-      let timerVictoria = null; // Para controlar los 60 segundos del audio
+
+        if (tablero[f][c].vecinas > 0) {
+          cellElement.innerText = tablero[f][c].vecinas;
+          cellElement.classList.add(`c-${Math.min(tablero[f][c].vecinas, 4)}`);
+        } else {
+          cellElement.innerText = "Malya2";
+          expandirVacias(f, c);
+        }
+
+        // VERIFICAR VICTORIA
+        if (reveladas === (FILAS * COLUMNAS) - MINAS) {
+          document.getElementById('status').innerText = "🏆 ¡GRACIAS POR APOYAR EL PROCESO! ¡MALYADO ERES UN RECIO!";
+          gameOver = true;
+
+          // Reproducción del audio de victoria por 60 segundos
+          const audioWin = document.getElementById('audioVictoria');
+          if (audioWin) {
+            audioWin.currentTime = 0;
+            audioWin.play();
+
+            timerVictoria = setTimeout(() => {
+              audioWin.pause();
+            }, 60000); // 1 minuto
+          }
+        }
       }
     }
 
