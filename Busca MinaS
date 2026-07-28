@@ -114,7 +114,7 @@
   </div>
 
   <!-- Audio de victoria personalizado -->
-  <audio id="audioVictoria" src="DEJATE LLEVAR Shimi PROD DJ CESAR MX.wav" preload="auto"></audio>
+  <audio id="audioVictoria" src="DEJATE LLEVAR Shimi PROD DJ CESAR MX.mp3" preload="auto"></audio>
 
   <script>
     const FILAS = 8;
