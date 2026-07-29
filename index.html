@@ -16,14 +16,12 @@
       margin: 0;
       user-select: none;
       
-      /* --- FONDO CON IMAGEN JPG --- */
-      /* Reemplaza 'fondo.jpg' por el nombre exacto de tu imagen en el repositorio */
       background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('fondo.jpg');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       background-attachment: fixed;
-      background-color: #0d0d0d; /* Fondo de respaldo si la imagen falla */
+      background-color: #0d0d0d;
     }
 
     h1 {
@@ -42,21 +40,20 @@
       text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
     }
 
-    /* --- TABLERO ROJO Y NEGRO --- */
     #board {
       display: grid;
       grid-template-columns: repeat(8, 45px);
       grid-template-rows: repeat(8, 45px);
       gap: 5px;
-      background-color: #0a0002; /* Fondo casi negro dentro del tablero */
+      background-color: #0a0002;
       padding: 12px;
       border-radius: 10px;
-      border: 2px solid #ff0033; /* Borde rojo neón */
+      border: 2px solid #ff0033;
       box-shadow: 0 0 20px rgba(255, 0, 51, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.9);
     }
 
     .cell {
-      background-color: #1a0005; /* Casilla sin abrir (Negro con tinte rojo) */
+      background-color: #1a0005;
       border: 1px solid #4a000d;
       border-radius: 4px;
       color: #ff3355;
@@ -73,12 +70,12 @@
     }
 
     .cell:hover {
-      background-color: #ff0033; /* Casilla en Hover (Rojo intenso) */
+      background-color: #ff0033;
       box-shadow: 0 0 8px #ff0033;
     }
 
     .cell.revealed {
-      background-color: #000000; /* Casilla revelada (Negro puro) */
+      background-color: #000000;
       border-color: #ff0033;
       color: #ff4d6d;
       cursor: default;
@@ -91,7 +88,7 @@
     }
 
     .cell.mine {
-      background-color: #ff0033; /* Mina tocada */
+      background-color: #ff0033;
       color: #ffffff;
       font-size: 1.2rem;
       box-shadow: 0 0 15px #ff0033;
@@ -134,12 +131,13 @@
     <button class="btn" id="musicBtn" onclick="toggleMusica()">🔊 Música: ON</button>
   </div>
 
-  <audio id="audioVictoria" src="dejate.mp3" preload="auto"></audio>
+  <!-- Audio con ruta relativa -->
+  <audio id="audioVictoria" src="./dejate.mp3" preload="auto"></audio>
 
   <script>
     const FILAS = 8;
     const COLUMNAS = 8;
-    const MINAS = 5; // 5 bombas activas
+    const MINAS = 5;
 
     let tablero = [];
     let reveladas = 0;
@@ -157,6 +155,12 @@
       }
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
+      }
+
+      // Preparar permiso para el audio de victoria en la primera interacción
+      const audioWin = document.getElementById('audioVictoria');
+      if (audioWin) {
+        audioWin.load();
       }
     }
 
@@ -312,7 +316,6 @@
         reproducirTono(523.25, 0.1);
 
         if (tablero[f][c].vecinas > 0) {
-          // Genera corazones en lugar de números
           cellElement.innerText = "❤️".repeat(tablero[f][c].vecinas);
         } else {
           cellElement.innerText = "Malya2";
@@ -326,7 +329,15 @@
           const audioWin = document.getElementById('audioVictoria');
           if (audioWin) {
             audioWin.currentTime = 0;
-            audioWin.play().catch(e => console.log("Error al reproducir audio de victoria:", e));
+            const playPromise = audioWin.play();
+            
+            if (playPromise !== undefined) {
+              playPromise.then(() => {
+                console.log("Música de victoria sonando correctamente.");
+              }).catch(e => {
+                console.error("No se pudo reproducir la música de victoria:", e);
+              });
+            }
 
             timerVictoria = setTimeout(() => {
               audioWin.pause();
