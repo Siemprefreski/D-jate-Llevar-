@@ -74,7 +74,6 @@
       font-size: 1.2rem;
     }
 
-    /* Colores para la cantidad de minas */
     .c-1 { color: #52b788; }
     .c-2 { color: #48cae4; }
     .c-3 { color: #ffb703; }
@@ -113,7 +112,7 @@
     <button class="btn" id="musicBtn" onclick="toggleMusica()">🔊 Música: ON</button>
   </div>
 
-  <!-- Audio de victoria personalizado -->
+  <!-- Asegúrate de renombrar el archivo de música en la misma carpeta a "dejate-llevar.mp3" -->
   <audio id="audioVictoria" src="DEJATE-LLEVAR-Shimi-PROD-DJ-CESAR-MX-_1_" preload="auto"></audio>
 
   <script>
@@ -125,15 +124,25 @@
     let reveladas = 0;
     let gameOver = false;
     let primerClic = true;
-    let timerVictoria = null; // Controla los 60 segundos del audio
+    let timerVictoria = null;
 
-    // --- Audio Web API ---
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    let musicaSonando = false;
+    let audioCtx = null;
+    let musicaSonando = true;
     let timerMusica = null;
 
+    function initAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
     function reproducirTono(freq, duracion, tipo = 'sine') {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      initAudioContext();
+      if (!audioCtx) return;
+      
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = tipo;
@@ -147,9 +156,9 @@
     }
 
     function iniciarMusicaFondo() {
+      if (timerMusica) return;
       const notas = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00];
       let i = 0;
-      musicaSonando = true;
       
       timerMusica = setInterval(() => {
         if (musicaSonando && !gameOver) {
@@ -160,12 +169,12 @@
     }
 
     function toggleMusica() {
+      initAudioContext();
       musicaSonando = !musicaSonando;
       document.getElementById('musicBtn').innerText = musicaSonando ? "🔊 Música: ON" : "🔇 Música: OFF";
       if (musicaSonando && !timerMusica) iniciarMusicaFondo();
     }
 
-    // --- Lógica del Juego ---
     function inicializarTablero() {
       const boardElement = document.getElementById('board');
       boardElement.innerHTML = '';
@@ -178,7 +187,6 @@
       primerClic = true;
       document.getElementById('status').innerText = "Haz clic en una casilla para comenzar";
 
-      // Detener audio de victoria anterior si estaba sonando
       const audioWin = document.getElementById('audioVictoria');
       if (audioWin) {
         audioWin.pause();
@@ -202,8 +210,6 @@
           boardElement.appendChild(cell);
         }
       }
-
-      if (!timerMusica) iniciarMusicaFondo();
     }
 
     function generarMinas(fExcluida, cExcluida) {
@@ -259,6 +265,9 @@
     }
 
     function descubrirCasilla(f, c) {
+      initAudioContext();
+      if (musicaSonando && !timerMusica) iniciarMusicaFondo();
+
       if (gameOver || tablero[f][c].revelado || tablero[f][c].marcada) return;
 
       if (primerClic) {
@@ -270,7 +279,6 @@
       const cellElement = getCellElement(f, c);
 
       if (tablero[f][c].minado) {
-        // PERDIÓ
         cellElement.classList.add('mine');
         cellElement.innerText = "💣";
         reproducirTono(100, 0.8, 'sawtooth');
@@ -278,7 +286,6 @@
         gameOver = true;
         revelarTodo();
       } else {
-        // CASILLA SEGURA
         cellElement.classList.add('revealed');
         reveladas++;
         reproducirTono(523.25, 0.1);
@@ -291,20 +298,18 @@
           expandirVacias(f, c);
         }
 
-        // VERIFICAR VICTORIA
         if (reveladas === (FILAS * COLUMNAS) - MINAS) {
           document.getElementById('status').innerText = "🏆 ¡GRACIAS POR APOYAR EL PROCESO! ¡MALYADO ERES UN RECIO!";
           gameOver = true;
 
-          // Reproducción del audio de victoria por 60 segundos
           const audioWin = document.getElementById('audioVictoria');
           if (audioWin) {
             audioWin.currentTime = 0;
-            audioWin.play();
+            audioWin.play().catch(e => console.log("Error al reproducir audio de victoria:", e));
 
             timerVictoria = setTimeout(() => {
               audioWin.pause();
-            }, 60000); // 1 minuto
+            }, 60000);
           }
         }
       }
