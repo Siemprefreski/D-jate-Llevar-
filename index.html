@@ -47,12 +47,15 @@
       border-radius: 4px;
       color: #fff;
       font-weight: bold;
-      font-size: 0.75rem;
+      font-size: 0.65rem; /* Ajustado para que quepan varios corazones */
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background 0.2s;
+      word-break: break-all;
+      text-align: center;
+      padding: 2px;
     }
 
     .cell:hover {
@@ -61,7 +64,7 @@
 
     .cell.revealed {
       background-color: #1b4332;
-      color: #52b788;
+      color: #ff4d6d;
       cursor: default;
     }
 
@@ -73,11 +76,6 @@
       background-color: #9e2a2b;
       font-size: 1.2rem;
     }
-
-    .c-1 { color: #52b788; }
-    .c-2 { color: #48cae4; }
-    .c-3 { color: #ffb703; }
-    .c-4 { color: #ff0054; }
 
     .controls {
       margin-top: 20px;
@@ -112,13 +110,12 @@
     <button class="btn" id="musicBtn" onclick="toggleMusica()">🔊 Música: ON</button>
   </div>
 
-  <!-- Asegúrate de renombrar el archivo de música en la misma carpeta a "dejate-llevar.mp3" -->
   <audio id="audioVictoria" src="dejate.mp3" preload="auto"></audio>
 
   <script>
     const FILAS = 8;
     const COLUMNAS = 8;
-    const MINAS = 10;
+    const MINAS = 5; // REDUCIDO: Ahora hay solo 5 bombas en lugar de 10
 
     let tablero = [];
     let reveladas = 0;
@@ -291,8 +288,8 @@
         reproducirTono(523.25, 0.1);
 
         if (tablero[f][c].vecinas > 0) {
-          cellElement.innerText = tablero[f][c].vecinas;
-          cellElement.classList.add(`c-${Math.min(tablero[f][c].vecinas, 4)}`);
+          // CAMBIO: En lugar de números, se colocan tanto corazones como bombas vecinas haya
+          cellElement.innerText = "❤️".repeat(tablero[f][c].vecinas);
         } else {
           cellElement.innerText = "Malya2";
           expandirVacias(f, c);
