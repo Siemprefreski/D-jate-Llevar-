@@ -7,7 +7,6 @@
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #121212;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -16,11 +15,22 @@
       min-height: 100vh;
       margin: 0;
       user-select: none;
+      
+      /* --- FONDO CON IMAGEN JPG --- */
+      /* Reemplaza 'fondo.jpg' por el nombre exacto de tu imagen en el repositorio */
+      background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('fondo.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-color: #0d0d0d; /* Fondo de respaldo si la imagen falla */
     }
 
     h1 {
       margin-bottom: 5px;
-      color: #ff3366;
+      color: #ff0033;
+      text-shadow: 0 0 10px rgba(255, 0, 51, 0.7);
+      text-align: center;
     }
 
     #status {
@@ -28,53 +38,63 @@
       margin-bottom: 15px;
       height: 30px;
       text-align: center;
+      color: #ffb3b3;
+      text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
     }
 
+    /* --- TABLERO ROJO Y NEGRO --- */
     #board {
       display: grid;
       grid-template-columns: repeat(8, 45px);
       grid-template-rows: repeat(8, 45px);
       gap: 5px;
-      background-color: #222;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      background-color: #0a0002; /* Fondo casi negro dentro del tablero */
+      padding: 12px;
+      border-radius: 10px;
+      border: 2px solid #ff0033; /* Borde rojo neón */
+      box-shadow: 0 0 20px rgba(255, 0, 51, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.9);
     }
 
     .cell {
-      background-color: #333;
-      border: none;
+      background-color: #1a0005; /* Casilla sin abrir (Negro con tinte rojo) */
+      border: 1px solid #4a000d;
       border-radius: 4px;
-      color: #fff;
+      color: #ff3355;
       font-weight: bold;
-      font-size: 0.65rem; /* Ajustado para que quepan varios corazones */
+      font-size: 0.65rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: all 0.2s;
       word-break: break-all;
       text-align: center;
       padding: 2px;
     }
 
     .cell:hover {
-      background-color: #444;
+      background-color: #ff0033; /* Casilla en Hover (Rojo intenso) */
+      box-shadow: 0 0 8px #ff0033;
     }
 
     .cell.revealed {
-      background-color: #1b4332;
+      background-color: #000000; /* Casilla revelada (Negro puro) */
+      border-color: #ff0033;
       color: #ff4d6d;
       cursor: default;
+      box-shadow: inset 0 0 5px rgba(255, 0, 51, 0.3);
     }
 
     .cell.flagged {
-      background-color: #4a3e1d;
+      background-color: #330000;
+      border-color: #ff0000;
     }
 
     .cell.mine {
-      background-color: #9e2a2b;
+      background-color: #ff0033; /* Mina tocada */
+      color: #ffffff;
       font-size: 1.2rem;
+      box-shadow: 0 0 15px #ff0033;
     }
 
     .controls {
@@ -85,16 +105,20 @@
 
     button.btn {
       padding: 10px 20px;
-      border: none;
-      background: #ff3366;
-      color: white;
+      border: 1px solid #ff0033;
+      background: #1a0005;
+      color: #ffffff;
       font-weight: bold;
       border-radius: 5px;
       cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 0 10px rgba(255, 0, 51, 0.2);
     }
 
     button.btn:hover {
-      background: #e02e5b;
+      background: #ff0033;
+      color: #000000;
+      box-shadow: 0 0 15px #ff0033;
     }
   </style>
 </head>
@@ -115,7 +139,7 @@
   <script>
     const FILAS = 8;
     const COLUMNAS = 8;
-    const MINAS = 5; // REDUCIDO: Ahora hay solo 5 bombas en lugar de 10
+    const MINAS = 5; // 5 bombas activas
 
     let tablero = [];
     let reveladas = 0;
@@ -288,7 +312,7 @@
         reproducirTono(523.25, 0.1);
 
         if (tablero[f][c].vecinas > 0) {
-          // CAMBIO: En lugar de números, se colocan tanto corazones como bombas vecinas haya
+          // Genera corazones en lugar de números
           cellElement.innerText = "❤️".repeat(tablero[f][c].vecinas);
         } else {
           cellElement.innerText = "Malya2";
