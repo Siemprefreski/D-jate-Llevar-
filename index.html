@@ -16,7 +16,8 @@
       margin: 0;
       user-select: none;
       
-      background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('fondo.jpg');
+      /* Ruta al fondo */
+      background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('./fondo.jpg');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -131,7 +132,7 @@
     <button class="btn" id="musicBtn" onclick="toggleMusica()">🔊 Música: ON</button>
   </div>
 
-  <!-- Audio con ruta relativa -->
+  <!-- Audio apuntando a la raíz explícita ./dejate.mp3 -->
   <audio id="audioVictoria" src="./dejate.mp3" preload="auto"></audio>
 
   <script>
@@ -149,6 +150,28 @@
     let musicaSonando = true;
     let timerMusica = null;
 
+    // Rutas de respaldo por si el archivo en GitHub tiene otro nombre/ubicación
+    const rutasRespaldoAudio = [
+      './dejate.mp3',
+      'dejate.mp3',
+      './DEJATE.MP3',
+      './Dejate.mp3',
+      './audio/dejate.mp3'
+    ];
+    let indiceRutaAudio = 0;
+
+    function probarSiguienteRutaAudio() {
+      const audioWin = document.getElementById('audioVictoria');
+      if (!audioWin) return;
+      
+      indiceRutaAudio++;
+      if (indiceRutaAudio < rutasRespaldoAudio.length) {
+        console.warn(`404 detectado. Intentando ruta alternativa: ${rutasRespaldoAudio[indiceRutaAudio]}`);
+        audioWin.src = rutasRespaldoAudio[indiceRutaAudio];
+        audioWin.load();
+      }
+    }
+
     function initAudioContext() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -157,7 +180,6 @@
         audioCtx.resume();
       }
 
-      // Preparar permiso para el audio de victoria en la primera interacción
       const audioWin = document.getElementById('audioVictoria');
       if (audioWin) {
         audioWin.load();
@@ -216,6 +238,8 @@
       if (audioWin) {
         audioWin.pause();
         audioWin.currentTime = 0;
+        // Escuchar si la ruta falla para cambiar a una alternativa automáticamente
+        audioWin.onerror = probarSiguienteRutaAudio;
       }
       clearTimeout(timerVictoria);
 
