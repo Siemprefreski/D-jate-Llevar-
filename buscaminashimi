@@ -113,7 +113,7 @@
   </div>
 
   <!-- Asegúrate de renombrar el archivo de música en la misma carpeta a "dejate-llevar.mp3" -->
-  <audio id="audioVictoria" src="DEJATE-LLEVAR-Shimi-PROD-DJ-CESAR-MX-_1_" preload="auto"></audio>
+  <audio id="audioVictoria" src="dejate.mp3" preload="auto"></audio>
 
   <script>
     const FILAS = 8;
